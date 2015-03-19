@@ -1,0 +1,2 @@
+# diplomka
+Diplomová práca
