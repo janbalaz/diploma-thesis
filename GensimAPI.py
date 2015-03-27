@@ -3,8 +3,9 @@ Created on 11.3.2015
 
 @author: Jan Balaz
 '''
-import re, unicodedata, string, gensim, logging, os
+import re, gensim, logging, os
 from nltk.corpus import stopwords
+from gensim import utils
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 class GensimAPI(object):
@@ -21,7 +22,7 @@ class GensimAPI(object):
         '''
         if algo.lower() not in self.ALGOS:
             raise Exception #TODO add own exception
-        #self.classif = self.get_trained_algo(algo) if trained else self.train_algo(algo, topics)
+        self.model = self.get_trained_algo(algo) if trained else self.train_algo(algo, topics)
     
     def train_algo(self, algo, topics):
         '''
@@ -29,7 +30,7 @@ class GensimAPI(object):
         '''
         id2word = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH, 'wordids.txt.bz2'))
         mm = gensim.corpora.MmCorpus(os.path.join(self.PATH, 'tfidf.mm'))
-        lda = gensim.models.ldamodel.LdaModel(corpus=mm, id2word=id2word, num_topics=topics, update_every=1, chunksize=10000, passes=1)
+        lda = gensim.models.ldamodel.LdaModel(corpus=mm, id2word=id2word, num_topics=topics, update_every=0, passes=20)
         lda.save(os.path.join(self.PATH, 'trained.' + str(algo).lower()))
         return lda
     
@@ -37,45 +38,51 @@ class GensimAPI(object):
         '''
         Loads trained data as object of given algorithm.
         '''
-        return gensim.models.ldamodel.LdaModel.load(self.PATH + 'trained.' + str(algo).lower())
+        return gensim.models.ldamodel.LdaModel.load(self.PATH + '\\trained.' + str(algo).lower())
     
-    def classify_text(self, text, dimension):
+    def classify_text(self, text, dimension=10):
         '''
         Classifies text, returns vector(of given dimension) of possible themes.
         '''
         text = self.preprocess_text(text)
-        themes = self.classif[text]
-        themes.sort() #is it necessary?
+        dictionary = gensim.corpora.Dictionary()
+        dictionary.merge_with(self.model.id2word)   
+        query = dictionary.doc2bow(text)
+        themes = list(sorted(self.model[query], key=lambda x: x[1], reverse=True))
+        #for theme in themes:
+        #    print(str(theme[0]) + ": " + self.model.print_topic(theme[0]))
         return themes[:dimension]
-        
+    
     def preprocess_text(self, text):
         '''
         Remove accents, special characters, short words and stopwords.
         '''
         text = self.remove_accents(text)
-        text = self.remove_special_characters(text)
+        text = self.remove_short_words_and_special_chars(text)
         text = self.remove_stopwords(text)
         return text
     
     def remove_stopwords(self, text):
         text = text.split()
-        stopwords = set(stopwords.words('english'))
-        text = [w for w in text if w not in stopwords]
+        sw = set(stopwords.words('english'))
+        text = [w.lower() for w in text if w not in sw]
         return text
     
     def remove_short_words_and_special_chars(self, text):
         '''
         Removes special characters and words shorter than 3 characters.
         '''
-        return re.sub(r"\\b\\w{1,4}\\b\\s?|[^\\sa-zA-Z]", "", text) #TODO rozpisat regex aj s komentarom
+        return re.sub(r"\b\w{1,4}\b\s?|[^\sa-zA-Z]", "", text) #TODO rozpisat regex aj s komentarom
                     
     def remove_accents(self, text):
         '''
         Removes accents from unicode text.
         '''
-        return ''.join(x for x in unicodedata.normalize('NFKD', text) if x in string.ascii_letters).lower()
+        return utils.to_unicode(text)
     
 if __name__ == "__main__":
-    gens = GensimAPI()
-    gens.train_algo('lda', 100)
+    gens = GensimAPI(False)
+    #themes = gens.classify_text('The Pope is the Bishop of Rome and the leader of the worldwide Catholic Church.[3] The importance of the Roman bishop is largely derived from his role as the traditional successor to Saint Peter, to whom Jesus gave the keys of Heaven and the powers of "binding and loosing", naming him as the "rock" upon which the church would be built. The current pope is Francis, who was elected on 13 March 2013, succeeding Benedict XVI.')
+    #themes = gens.classify_text('French Paris Jean Jacques France French')
+    #print(themes)
     
