@@ -5,12 +5,22 @@ Created on 11.3.2015
 '''
 import gensim, logging, os
 from gensim.corpora import wikicorpus
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+class GensimAPIError(Exception):
+    '''Base exception class for other exception from this module.'''
+    pass
+
+class NotSupportedError(GensimAPIError):
+    '''Raised when given algorithm is not supported in this API.'''
+    pass
+
+class NotTrainedError(GensimAPIError):
+    '''Raised when algorithm was not trained or properly loaded.'''
+    pass
 
 class GensimAPI(object):
-    '''
-    API for Gensim library. Manages training of classification algorithm and process of text classification.
-    '''
+    '''API for Gensim library. Manages training of classification algorithm and process of text classification.'''
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     ALGOS = { #dict of supported algorithms and their model functions
              'lsi': gensim.models.lsimodel.LsiModel,
@@ -18,20 +28,15 @@ class GensimAPI(object):
             }
 
     def __init__(self, trained=True, algo='lda', topics=100):
-        '''
-        Loads training data depending on classification algorithm. 
-        Raises exception if algo is not supported.
-        '''
+        '''Loads training data depending on classification algorithm.Raises exception if algo is not supported.'''
         if algo.lower() not in self.ALGOS.keys():
-            raise Exception #TODO add own exception about not supported
+            raise NotSupportedError
         self.model, self.dictionary = self.get_trained_algo(algo) if trained else self.train_algo(algo, topics)
         if self.model is None or self.dictionary is None:
-            raise Exception #TODO add own exception about not trained or loaded
+            raise NotTrainedError
     
     def train_algo(self, algo, topics):
-        '''
-        Trains Gensim library with selected algorithm, uses English Wikipedia dump.
-        '''
+        '''Trains Gensim library with selected algorithm, uses English Wikipedia dump.'''
         try:
             dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH, 'wordids.txt.bz2'))
             mm = gensim.corpora.MmCorpus(os.path.join(self.PATH, 'tfidf.mm'))
@@ -42,21 +47,15 @@ class GensimAPI(object):
             return None, None
         
     def persist(self, model, algo):
-        '''
-        Saves trained model to disc.
-        '''
+        '''Saves trained model to disc.'''
         model.save(os.path.join(self.PATH, 'trained.' + str(algo).lower()))
         
     def get_model(self, func, mm, id2word, topics):
-        '''
-        Returns model for given classification algorithm by func parameter.
-        '''
+        '''Returns model for given classification algorithm by func parameter.'''
         return func(corpus=mm, id2word=id2word, num_topics=topics)    
     
     def get_trained_algo(self, algo):
-        '''
-        Loads trained data as object of given algorithm.
-        '''
+        '''Loads trained data as object of given algorithm.'''
         try:
             model = gensim.models.ldamodel.LdaModel.load(self.PATH + '\\trained.' + str(algo).lower())
             dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH, 'wordids.txt.bz2'))
@@ -76,15 +75,11 @@ class GensimAPI(object):
         return themes[:dimension]
     
     def get_query(self, text):
-        '''
-        Preprocess and tokenize text, return it as BOW (bag of words)
-        '''
+        '''Preprocess and tokenize text, return it as BOW (bag of words)'''
         return self.dictionary.doc2bow(wikicorpus.tokenize(text))
     
     def print_themes(self, themes):
-        '''
-            Print suitable themes for debugging purpose. Delete before production.
-        '''
+        '''Print suitable themes for debugging purpose. Delete before production.'''
         for theme in themes:
             print(str(theme[0]) + ": " + self.model.print_topic(theme[0]))
     
