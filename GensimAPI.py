@@ -20,7 +20,7 @@ class NotTrainedError(GensimAPIError):
 
 class GensimAPI(object):
     '''API for Gensim library. Manages training of classification algorithm and process of text classification.'''
-    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+    #logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     ALGOS = { #dict of supported algorithms and their model functions
              'lsi': gensim.models.lsimodel.LsiModel,
@@ -82,12 +82,4 @@ class GensimAPI(object):
         '''Print suitable themes for debugging purpose. Delete before production.'''
         for theme in themes:
             print(str(theme[0]) + ": " + self.model.print_topic(theme[0]))
-    
-if __name__ == "__main__":
-    #gens = GensimAPI()
-    #gens = GensimAPI(False, 'lsi', 100)
-    #gens.train_algo('lsi', 100)
-    #themes = gens.classify_text('The Pope is the Bishop of Rome and the leader of the worldwide Catholic Church.[3] The importance of the Roman bishop is largely derived from his role as the traditional successor to Saint Peter, to whom Jesus gave the keys of Heaven and the powers of "binding and loosing", naming him as the "rock" upon which the church would be built. The current pope is Francis, who was elected on 13 March 2013, succeeding Benedict XVI.')
-    #themes = gens.classify_text('French Paris Jean Jacques France French')
-    #print(themes)
-    
+            
