@@ -1,4 +1,4 @@
-"""TODO: Add module description.
+"""Module trains chosen algorithms and then classifies text inputs.
 @author: Jan Balaz
 """
 
@@ -37,10 +37,10 @@ class GensimAPI(object):
     def __init__(self, trained=True, algo="lda", topics=100):
         """Loads training data depending on classification algorithm.Raises exception if algo is not supported.  """
         if algo.lower() not in self.ALGOS.keys():
-            raise NotSupportedError
+            raise NotSupportedError("Training algorithm used for classification is not supported by this application.")
         self.model, self.dictionary = self._get_trained_algo(algo) if trained else self._train_algo(algo, topics)
         if self.model is None or self.dictionary is None:
-            raise NotTrainedError
+            raise NotTrainedError("Training of algorithm was not successful, cannot be used for classification.")
         
     def classify_text(self, text, dimension=10):
         """Classifies text, adjusts result vector to given dimension or smaller.  

@@ -1,72 +1,105 @@
-'''
-Created on 3.4.2015
-
+"""TODO add desc
 @author: Jan Balaz
-'''
+"""
+
 import pymongo
-from Gensim_P.GensimAPI import GensimAPI
+from bson import ObjectId
+from gensim_P.gensimAPI import GensimAPI
+
+
+class ModelError(Exception):
+    """Base exception class for other exception from this module.  """
+    pass
+
+
+class NotPersistedError(ModelError):
+    """Raised when data was not persisted in database.  """
+    pass
+
 
 class Model(object):
-    '''Communicates both with GensimAPI and MongoDB. Stores categories, classified data and offers them to higher layers of application.'''
-    DATABASE = 'my_database'
-    TABLES = {'cat_lda': 'categories', 'texts': 'texts', 'classif': 'classification', 'cnt': 'counters'}
+    """Communicates both with GensimAPI and MongoDB. Stores categories, 
+    classified data and offers them to higher layers of application.
+    """
+    DATABASE = "my_database"
+    TABLES = {"cat_lda": "categories", "texts": "texts", "classif": "classification"}
     DIMENSION = 3
     
-    def __init__(self, algo='lda'):
-        '''
+    def __init__(self, algo="lda"):
+        """
         Constructor
-        '''
+        """
         self.algo = algo
+        self._get_db()
     
-    def get_db(self):
-        '''Tries to connect to DB. Returns DB if successful.'''
+    def _get_db(self, n_tries=3):
+        """Tries to connect to DB. Sets DB as class variable.
+        If connection failure, tries to repeat itself max. three times.
+        """
         try:
             conn = pymongo.MongoClient()
             db = conn[self.DATABASE]
-            return db 
         except pymongo.errors.ConnectionFailure:
-            return None
+            if n_tries:
+                self._get_db(n_tries-1)
+            else:
+                self.DB = None
+        else:
+            self.DB = db
         
     def classify(self, text):
-        '''Classifies text with gensim and then persists it.'''
-        gensim = GensimAPI(algo=self.algo)
-        categories = gensim.classify_text(text, self.DIMENSION)
-        return self.persist_classification(text, categories)
-        
-    def persist_classification(self, text, categories):
-        '''Persists text and all of it's classifications.'''
+        """Classifies text with gensim and then persists it. """  
         try:
-            db = self.get_db()
-            text_id = self.get_next_sequence('texts')
-            db[self.TABLES['texts']].insert({'_id': text_id, 'text': text})
-            for c_id, c_prob in categories:
-                cl_id = self.get_next_sequence('classif')
-                db[self.TABLES['classif']].insert({'_id': cl_id, 'category_id': c_id, 'text_id': text_id, 'probability': c_prob})
-            return True
+            gensim = GensimAPI(algo=self.algo)  
+        except Exception as e:
+            return False, e.get_message()
+        else:
+            categories = gensim.classify_text(text, self.DIMENSION)
+            return self._persist(text, categories)
+        
+    def _persist(self, text, categories):
+        """Persists text and all of it's classifications. """
+        try:
+            text_id = self._persist_text(text)
+            self._persist_classification(text, categories)
+        except Exception as e:
+            return False, e.get_message()
+        else:
+            return True, text_id
+        
+    def _persist_text(self, text):
+        """Persists text which was classified in database.  """
+        text_id = ObjectId()
+        try:
+            insert = self.DB[self.TABLES["texts"]].insert({"_id": text_id, 
+                                                           "text": text})
         except pymongo.errors.PyMongoError:
-            return False
-      
-    def get_next_sequence(self, name):
-        '''Generator of next sequence for collection with given name.'''
-        db = self.get_db()
-        ret = db[self.TABLES['cnt']].findAndModify({'query': {'_id': name },'update': { '$inc': { 'seq': 1 } }, 'new': True});
-        return ret.seq;  
+            raise NotPersistedError("Error with database insertion through pymongo.")
+        else:
+            if insert["nInserted"]:
+                return text_id
+            else:
+                raise NotPersistedError("Number of inserted objects is 0.")
+            
+    def _persist_classification(self, t_id, categories):
+        """Persists classification of text in database.  """
+        try:
+            counter = 0
+            for c_id, c_prob in categories:
+                insert = self.DB[self.TABLES["classif"]].insert({"category_id": c_id, 
+                                                                 "text_id": t_id, 
+                                                                 "probability": c_prob, 
+                                                                 "algo": self.algo})
+                if not insert["nInserted"]:
+                    counter += 1                
+        except pymongo.errors.PyMongoError:
+            raise NotPersistedError("Error with database insertion through pymongo.")  
+        else:
+            if counter:
+                raise NotPersistedError("{} categories were not inserted in database.".format(counter))
         
     def first_inicialization(self, key):
-        '''Used to clear all tables and create mapping and counters.'''
-        self.map_categories(key)
-        self.create_counters()
-        
-    def create_counters(self):
-        '''Creates counters for auto increment of table's ids.'''
-        db = self.get_db()
-        db.drop_collection(self.TABLES['cnt'])
-        for key, table in self.TABLES:
-            db.drop_collection(table)
-            db[self.TABLES['cnt']].insert({'_id': key, 'seq': 0})
-        
-    def map_categories(self, key):
-        '''Used only once to map categories and their ids from classification algorithm'''
+        """Used only once to map categories and their ids from classification algorithm.  """
         db = self.get_db()
         try:
             db.drop_collection(self.TABLES[key])
@@ -90,8 +123,8 @@ class Model(object):
                            '43': 'Germany', '38': 'chemistry', '93': 'snail','18': 'law and human rights', '24': 'historic buildings', '71': 'racing'}
             for cnum, cname in categories.items():
                 document = {}
-                document['_id'] = int(cnum)
-                document['name'] = cname
+                document["_id"] = int(cnum)
+                document["name"] = cname
                 collection.insert(document)
             return True
         except:
