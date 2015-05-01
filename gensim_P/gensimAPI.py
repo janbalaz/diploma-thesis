@@ -95,4 +95,6 @@ class GensimAPI(object):
         """Themes for debugging purpose. Delete before production.  """
         themes = self.model.print_topics(100)
         return themes
-            
+    
+if __name__ == "__main__":
+    gens = GensimAPI()

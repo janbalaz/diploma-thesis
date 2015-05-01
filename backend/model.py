@@ -1,4 +1,5 @@
-"""TODO add desc
+"""Communicates both with GensimAPI and MongoDB database. Offers text classification and it's persisting.
+Defines also own exception.
 @author: Jan Balaz
 """
 
@@ -22,15 +23,53 @@ class Model(object):
     classified data and offers them to higher layers of application.
     """
     DATABASE = "my_database"
-    TABLES = {"cat_lda": "categories", "texts": "texts", "classif": "classification"}
+    TABLES = {"cat_lda": "categories", "classif": "classification"}
     DIMENSION = 3
     
     def __init__(self, algo="lda"):
-        """
-        Constructor
-        """
+        """Initialises type of used algorithm and opens connection to database.  """
         self.algo = algo
         self._get_db()
+        #self.DB.drop_collection(self.TABLES["classif"])
+        
+    def classify(self, text):
+        """Classifies text with gensim and then persists it. """  
+        try:
+            gensim = GensimAPI(algo=self.algo)  
+        except Exception as e:
+            return False, e.get_message()
+        else:
+            categories = gensim.classify_text(text, self.DIMENSION)
+            return self._persist(text, categories)
+        
+    def get_classified_text(self, classif_id, algo="lda"):
+        """Returns single classified text based on unique key. For example 5543b3976312fc15cc3bd1ee.  """
+        collection = self.DB[self.TABLES["classif"]]
+        result = collection.find({"_id": classif_id, "algo": algo})
+        if result.count():
+            return result[0]
+        else:
+            return None
+    
+    def get_all_classified(self, algo="lda"):
+        """Return all texts classified by given algo.  """
+        collection = self.DB[self.TABLES["classif"]]
+        result = collection.find({"algo": algo})
+        if result.count():
+            return list(result)
+        else:
+            return None
+    
+    def reconnect_db(self):
+        """Tries to reconnect to db if connection was not established.  """
+        self._get_db()
+    
+    def close_connection(self):
+        """Closes connection to database. 
+        Recommended to call only when closing whole application because reconnecting is costly operation.
+        """
+        if self.CONNECTION:
+            self.CONNECTION.close()
     
     def _get_db(self, n_tries=3):
         """Tries to connect to DB. Sets DB as class variable.
@@ -44,66 +83,60 @@ class Model(object):
                 self._get_db(n_tries-1)
             else:
                 self.DB = None
+                self.CONNECTION = None             
         else:
             self.DB = db
-        
-    def classify(self, text):
-        """Classifies text with gensim and then persists it. """  
-        try:
-            gensim = GensimAPI(algo=self.algo)  
-        except Exception as e:
-            return False, e.get_message()
-        else:
-            categories = gensim.classify_text(text, self.DIMENSION)
-            return self._persist(text, categories)
+            self.CONNECTION = conn
         
     def _persist(self, text, categories):
         """Persists text and all of it's classifications. """
         try:
-            text_id = self._persist_text(text)
-            self._persist_classification(text, categories)
+            classif_id = self._persist_classification(text, categories)
         except Exception as e:
             return False, e.get_message()
         else:
-            return True, text_id
-        
-    def _persist_text(self, text):
-        """Persists text which was classified in database.  """
-        text_id = ObjectId()
-        try:
-            insert = self.DB[self.TABLES["texts"]].insert({"_id": text_id, 
-                                                           "text": text})
-        except pymongo.errors.PyMongoError:
-            raise NotPersistedError("Error with database insertion through pymongo.")
-        else:
-            if insert["nInserted"]:
-                return text_id
-            else:
-                raise NotPersistedError("Number of inserted objects is 0.")
+            return True, classif_id
             
-    def _persist_classification(self, t_id, categories):
+    def _persist_classification(self, text, categories):
         """Persists classification of text in database.  """
         try:
-            counter = 0
-            for c_id, c_prob in categories:
-                insert = self.DB[self.TABLES["classif"]].insert({"category_id": c_id, 
-                                                                 "text_id": t_id, 
-                                                                 "probability": c_prob, 
-                                                                 "algo": self.algo})
-                if not insert["nInserted"]:
-                    counter += 1                
+            named_categories = self._get_named_categories(categories)
+            classif_id = ObjectId()
+            insert = self.DB[self.TABLES["classif"]].insert({"_id": str(classif_id),
+                                                             "categories": named_categories, 
+                                                             "text": text, 
+                                                             "algo": self.algo})               
         except pymongo.errors.PyMongoError:
             raise NotPersistedError("Error with database insertion through pymongo.")  
         else:
-            if counter:
-                raise NotPersistedError("{} categories were not inserted in database.".format(counter))
+            if insert:
+                return insert
+            else:
+                raise NotPersistedError("Classification was not inserted in database.")
+            
+    def _get_named_categories(self, categories):
+        """Assigns names of categories to them.  """
+        named_categories = []
+        for c_id, probability in categories:
+            c_name = self._get_category_name(c_id)
+            named_categories.append((c_id, c_name, probability))
+        return named_categories
+            
+    def _get_category_name(self, c_id):
+        """Return name of category with given id.  """
+        collection = self.DB[self.TABLES["cat_" + self.algo]]
+        result = collection.find({"_id": c_id})
+        if result.count():
+            return result[0]["name"]
+        else:
+            return None
         
     def first_inicialization(self, key):
         """Used only once to map categories and their ids from classification algorithm.  """
-        db = self.get_db()
+        #db = self.get_db()
         try:
-            db.drop_collection(self.TABLES[key])
-            collection = db[self.TABLES[key]]        
+            self.DB.drop_collection(self.TABLES[key])
+            collection = self.DB[self.TABLES[key]]        
             categories = {'45': 'geography', '52': 'Russia', '98': 'indian movies', '40': 'test', '48': 'films', '36': 'classical music and opera', 
                            '87': 'railway', '30': 'dentistry', '75': 'Vietnam', '88': 'space', '85': 'India', '70': 'China', '9': 'music', 
                            '84': 'hockey', '79': 'biology', '5': 'winter sports', '72': 'islam', '58': 'roman and greek history', '22': 'England', 
@@ -132,4 +165,3 @@ class Model(object):
     
 if __name__ == "__main__":
     model = Model()
-    model.classify('The Pope is the Bishop of Rome and the leader of the worldwide Catholic Church.[3] The importance of the Roman bishop is largely derived from his role as the traditional successor to Saint Peter, to whom Jesus gave the keys of Heaven and the powers of "binding and loosing", naming him as the "rock" upon which the church would be built. The current pope is Francis, who was elected on 13 March 2013, succeeding Benedict XVI.')
