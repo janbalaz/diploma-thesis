@@ -3,16 +3,16 @@
 """
 
 import os
-#from backend.model import Model
+from backend.model import Model
 from backend.jsonencoder import JSONEncoder
 from flask import Flask, request, abort
 from flask.ext.cors import CORS, cross_origin
 
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
-#MODEL = Model()
+MODEL = Model()
 
-cors = CORS(app, resources={r"/": {"origins": "localhost"}})
+#cors = CORS(app, resources={r"/": {"origins": "localhost"}})
 
 @app.route("/<int:type>")
 @cross_origin(origin='localhost', headers=['Content- Type'])
@@ -145,13 +145,16 @@ def main(type):
           }}
     return JSONEncoder().encode(data)
 
-'''
+
 @app.route("/categories/", methods=["GET"])
+@cross_origin(origin='localhost', headers=['Content- Type'])
 def categories():
     if request.method == "GET":
-        pass
+        categories = MODEL.get_all_categories()
+        return JSONEncoder().encode(categories)
     else:
         abort(404)
+
 
 @app.route("/classify/", methods=["POST"])
 def classification_post():
@@ -168,6 +171,7 @@ def classification_post():
             abort(400)
     else:
         abort(404)
+
 
 @app.route("/classification/", methods=["GET"])
 def classification_get():
@@ -186,10 +190,10 @@ def classification_get():
         abort(404)
     return JSONEncoder().encode(result)
 
+
 @app.teardown_appcontext
 def close_database(exception):
     MODEL.close_connection()
-'''
     
 
 if __name__ == "__main__":

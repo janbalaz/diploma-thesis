@@ -1,0 +1,4 @@
+.gitignore
+/env
+py3env
+/backend/public

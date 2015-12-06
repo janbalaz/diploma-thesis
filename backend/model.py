@@ -3,6 +3,8 @@ Defines also own exception.
 @author: Jan Balaz
 """
 
+import os
+import json
 import pymongo
 from bson import ObjectId
 from gensim_P.gensimAPI import GensimAPI
@@ -113,6 +115,15 @@ class Model(object):
                 return insert
             else:
                 raise NotPersistedError("Classification was not inserted in database.")
+
+    def get_all_categories(self):
+        """Returns all named categories."""
+        collection = self.DB[self.TABLES["cat_{}".format(self.algo)]]
+        categories = []
+        for row in collection.find():
+            categories.append(row)
+
+        return categories
             
     def _get_named_categories(self, categories):
         """Assigns names of categories to them.  """
@@ -133,35 +144,26 @@ class Model(object):
         
     def first_inicialization(self, key):
         """Used only once to map categories and their ids from classification algorithm.  """
-        #db = self.get_db()
         try:
-            self.DB.drop_collection(self.TABLES[key])
-            collection = self.DB[self.TABLES[key]]        
-            categories = {'45': 'geography', '52': 'Russia', '98': 'indian movies', '40': 'test', '48': 'films', '36': 'classical music and opera', 
-                           '87': 'railway', '30': 'dentistry', '75': 'Vietnam', '88': 'space', '85': 'India', '70': 'China', '9': 'music', 
-                           '84': 'hockey', '79': 'biology', '5': 'winter sports', '72': 'islam', '58': 'roman and greek history', '22': 'England', 
-                           '3': 'Scotland', '61': 'american football', '91': 'mathematics', '21': 'design', '65': 'Portugal', '39': 'South-East Asia', 
-                           '49': 'butterflies', '82': 'sports', '47': 'horse racing', '35': 'basketball', '62': 'Africa', '69': 'martial arts', 
-                           '51': 'Denmark', '41': 'football', '46': 'Sweden', '86': 'beauty competitions', '50': 'Brazil', '68': 'business', 
-                           '42': 'soundtrack', '37': 'USA states', '19': 'flora', '13': 'indian science', '57': 'judaismus', '77': 'environment', 
-                           '44': 'archeology', '96': 'Belgium', '1': 'paintings', '81': 'manga and anime', '12': 'moth', '89': 'rugby', 
-                           '31': 'aviation', '64': 'history of wars', '78': 'balcan', '74': 'shopping', '56': 'oceania and islands', 
-                           '7': 'South America', '16': 'restaurant', '28': 'medicine', '10': 'famous person', '94': 'art', '67': 'olympic', 
-                           '53': 'military', '15': 'traffic', '55': 'Ireland', '54': 'science', '0': 'Korea', '90': 'house architecture', 
-                           '20': 'massmedia', '80': 'english history', '63': 'naturalism', '33': 'airport', '99': 'Indonesia', '26': 'stars', 
-                           '14': 'cristianity', '8': 'Mexico', '92': 'chinese dynasty', '34': 'energy production', '73': 'Finland', 
-                           '25': 'criminality', '95': 'regions', '32': 'information technologies', '4': 'France', '17': 'education', 
-                           '97': 'politics', '11': 'insect', '66': 'literature', '59': 'arctic', '83': 'games', '2': 'cell and dna biology', 
-                           '6': 'pop music', '60': 'cricket', '27': 'Pakistan', '76': 'antarctic islands', '29': 'monarchy', '23': 'Italy', 
-                           '43': 'Germany', '38': 'chemistry', '93': 'snail','18': 'law and human rights', '24': 'historic buildings', '71': 'racing'}
+            collection = self.DB[self.TABLES[key]]
+            if collection.count() is not 0:
+                self.DB.drop_collection(self.TABLES[key])
+                collection = self.DB[self.TABLES[key]]
+
+            filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources/named_categories.lda")
+            with open (filepath, "r") as f:
+                categories = f.read().replace('\n', '')
+
+            categories = json.loads(categories)
             for cnum, cname in categories.items():
                 document = {}
                 document["_id"] = int(cnum)
                 document["name"] = cname
                 collection.insert(document)
             return True
-        except:
+        except Exception as e:
+            print(e)
             return False 
     
 if __name__ == "__main__":
-    model = Model()
+    print(Model().first_inicialization("cat_lda"))
