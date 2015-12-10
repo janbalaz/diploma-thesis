@@ -34,7 +34,7 @@ class GensimAPI(object):
              "lda": gensim.models.LdaModel  # TODO train this algo
             }
 
-    def __init__(self, trained=True, algo="lda", topics=100):
+    def __init__(self, trained=False, algo="lda", topics=100):
         """Loads training data depending on classification algorithm.Raises exception if algo is not supported.  """
         if algo.lower() not in self.ALGOS.keys():
             raise NotSupportedError("Training algorithm used for classification is not supported by this application.")
@@ -76,9 +76,10 @@ class GensimAPI(object):
         """Loads trained data as object of given algorithm.  """
         try:
             path = os.path.join(self.PATH, "trained.{}".format(str(algo).lower()))
-            model = gensim.models.LdaModel.load(path)
+            model = gensim.models.LdaModel().load(path)
             dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH, self.WORD_IDS))
-        except Exception:
+        except Exception as e:
+            print(e)
             return None, None
         else:
             return model, dictionary

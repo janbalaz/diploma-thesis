@@ -2,12 +2,18 @@ var AppDispatcher = require('../dispatcher/AppDispatcher');
 var AppConstants = require('../constants/AppConstants');
 
 var AppActions = {
-  addItem: function(item){
-    AppDispatcher.handleViewAction({
-      actionType:AppConstants.ADD_ITEM,
-      item: item
-    })
-  }
-}
+    addItem: function(item){
+        AppDispatcher.dispatch({
+            actionType:AppConstants.ADD_ITEM,
+            item: item
+        })
+    },
 
-module.exports = AppActions
+    loadCharts: function(){
+        AppDispatcher.dispatch({
+            actionType:AppConstants.LOAD_CHARTS
+        })
+    }
+};
+
+module.exports = AppActions;

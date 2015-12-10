@@ -1,4 +1,7 @@
-module.exports = {
-  ADD_ITEM: 'ADD_ITEM',
-  REMOVE_ITEM: 'REMOVE_ITEM'
-};
+var keyMirror = require('keymirror');
+
+module.exports = keyMirror({
+    ADD_ITEM: null,
+    REMOVE_ITEM: null,
+    LOAD_CHARTS: null
+});

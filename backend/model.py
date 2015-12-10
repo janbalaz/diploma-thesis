@@ -166,4 +166,12 @@ class Model(object):
             return False 
     
 if __name__ == "__main__":
-    print(Model().first_inicialization("cat_lda"))
+    m = Model()
+    text = '''The Pope is the Bishop of Rome and the leader of the worldwide Catholic Church.[3]
+        The importance of the Roman bishop is largely derived from his role as the traditional successor to Saint Peter,
+        to whom Jesus gave the keys of Heaven and the powers of "binding and loosing",
+        naming him as the "rock" upon which the church would be built.
+        The current pope is Francis, who was elected on 13 March 2013, succeeding Benedict XVI.
+        '''
+    m.classify(text)
+    print(m.get_all_classified("lda"))

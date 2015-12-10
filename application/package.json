@@ -1,19 +1,28 @@
 {
-  "name": "flux",
+  "name": "Visualization and categorization of realtime data",
   "version": "0.0.1",
-  "description": "A simple TODOS app in React and Flux",
-  "author": "Ben Grunfeld",
-  "repository": "https://github.com/bengrunfeld/flux-react-todos",
-  "readme": "https://github.com/bengrunfeld/flux-react-todos/README.md",
+  "description": "Application based on LDA algorithm for text categorization.",
+  "author": "Jan Balaz",
+  "repository": "https://github.com/mgpjohny/diplomka.git",
+  "readme": "https://github.com/mgpjohny/diplomka/README.md",
   "license": "Apache 2",
   "devDependencies": {
+    "es6-promise": "^1.0.0",
+    "flux": "^2.0.1",
     "gulp": "^3.8.11",
     "gulp-browserify": "^0.5.0",
     "gulp-concat": "^2.2.0",
-    "react": "^0.12.2",
-    "reactify": "^0.13.1",
-    "es6-promise": "^1.0.0",
-    "flux": "^2.0.1",
-    "object-assign": "^1.0.0"
+    "gulp-connect": "^2.2.0",
+    "gulp-html-replace": "^1.5.5",
+    "gulp-streamify": "^1.0.2",
+    "gulp-uglify": "^1.5.1",
+    "keymirror": "^0.1.1",
+    "object-assign": "^1.0.0",
+    "react": "^0.14.3",
+    "react-dom": "^0.14.3",
+    "react-google-charts": "^0.1.9",
+    "reactify": "^1.1.1",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.6.1"
   }
 }

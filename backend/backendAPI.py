@@ -6,16 +6,27 @@ import os
 from backend.model import Model
 from backend.jsonencoder import JSONEncoder
 from flask import Flask, request, abort
-from flask.ext.cors import CORS, cross_origin
 
 app = Flask(__name__)
-app.config['CORS_HEADERS'] = 'Content-Type'
 MODEL = Model()
 
-#cors = CORS(app, resources={r"/": {"origins": "localhost"}})
+
+@app.after_request
+def add_cors(resp):
+    """ Ensure all responses have the CORS headers. This ensures any failures are also accessible
+        by the client. """
+    resp.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    resp.headers['Access-Control-Allow-Credentials'] = 'true'
+    resp.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS, GET'
+    resp.headers['Access-Control-Allow-Headers'] = request.headers.get('Access-Control-Request-Headers',
+                                                                       'Authorization')
+    # set low for debugging
+    if app.debug:
+        resp.headers['Access-Control-Max-Age'] = '1'
+    return resp
+
 
 @app.route("/<int:type>")
-@cross_origin(origin='localhost', headers=['Content- Type'])
 def main(type):
     if type == 1:
         data = {"dataArray" : [
@@ -147,7 +158,6 @@ def main(type):
 
 
 @app.route("/categories/", methods=["GET"])
-@cross_origin(origin='localhost', headers=['Content- Type'])
 def categories():
     if request.method == "GET":
         categories = MODEL.get_all_categories()
@@ -159,7 +169,7 @@ def categories():
 @app.route("/classify/", methods=["POST"])
 def classification_post():
     if request.method == "POST":
-        text = request.form.get("text")
+        text = request.data["text"]
         if text:
             success, message = MODEL.classify(text)
             if success:
@@ -176,7 +186,7 @@ def classification_post():
 @app.route("/classification/", methods=["GET"])
 def classification_get():
     if request.method == "GET":
-        post_id =  request.args.get("post_id")
+        post_id = request.args.get("post_id")
         if post_id:
             text = MODEL.get_classified_text(post_id)
             if text:
