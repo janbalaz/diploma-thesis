@@ -30,8 +30,8 @@ class GensimAPI(object):
     PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources")
     TF_IDF = "tfidf.mm"
     WORD_IDS = "wordids.txt.bz2"
-    ALGOS = {"lsi": gensim.models.lsimodel.LsiModel,
-             "lda": gensim.models.ldamodel.LdaModel #TODO train this algo
+    ALGOS = {"lsi": gensim.models.LsiModel,
+             "lda": gensim.models.LdaModel  # TODO train this algo
             }
 
     def __init__(self, trained=True, algo="lda", topics=100):
@@ -75,7 +75,8 @@ class GensimAPI(object):
     def _get_trained_algo(self, algo):
         """Loads trained data as object of given algorithm.  """
         try:
-            model = gensim.models.ldamodel.LdaModel.load(self.PATH + "\\trained." + str(algo).lower())
+            path = os.path.join(self.PATH, "trained.{}".format(str(algo).lower()))
+            model = gensim.models.LdaModel.load(path)
             dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH, self.WORD_IDS))
         except Exception:
             return None, None
