@@ -1,3 +1,4 @@
 .gitignore
 /envs
 py3env
+/frontend/node_modules
