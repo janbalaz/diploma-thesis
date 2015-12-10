@@ -5,12 +5,31 @@ var AppStore = require('../stores/AppStore');
 var ChartStore = require('../stores/ChartStore');
 var Charts = require('./charts.js');
 
+/*
+<Charts width="600" height="600" chartType="BarChart" chartState={this.state.chartState} />
+ */
+
+function getChartState() {
+  return {
+    singleChart: ChartStore.get()
+  };
+}
+
 var App = React.createClass({
+    getInitialState: function() {
+        return {
+            chartState: getChartState()
+        };
+    },
     handleClick:function(){
         AppActions.addItem('this is the item');
     },
     componentDidMount: function() {
         AppActions.loadCharts();
+        ChartStore.addChangeListener(this._onChange);
+    },
+    componentWillUnmount: function() {
+        ChartStore.removeChangeListener(this._onChange);
     },
     render:function(){
         return (
@@ -25,11 +44,17 @@ var App = React.createClass({
                 </div>
                 <div className="row">
                     <div className="col-md-6">
-                        <Charts width="600" height="600" chartType="BarChart" />
+                        OMG
+                        <Charts />
                     </div>
                 </div>
             </div>
         )
+    },
+    _onChange: function() {
+        this.setState({
+            chartState: getChartState()
+        });
     }
   });
 

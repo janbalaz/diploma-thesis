@@ -77,9 +77,9 @@ function loadFromServer() {
         ["Platinum", 21.45, "color: #e5e4e2" ]
     ],
     options: {
-        "title": "Density of Precious Metals, in g/cm^3",
-        "bar": {"groupWidth": "95%"},
-        "legend": {"position": "none"}
+        title: "Density of Precious Metals, in g/cm^3",
+        bar: {groupWidth: "95%"},
+        legend: {position: "none"}
     }}
 }
 

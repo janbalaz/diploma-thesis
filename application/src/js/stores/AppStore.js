@@ -19,9 +19,6 @@ AppDispatcher.register(function(action) {
             AppStore.emitChange();
             break;
 
-        case AppConstants.LOAD_CHARTS:
-            AppStore.emitChange();
-            break;
         default:
             // no op
   }
