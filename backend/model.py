@@ -7,7 +7,7 @@ import os
 import json
 import pymongo
 from bson import ObjectId
-from gensim_P.gensimAPI import GensimAPI
+from classification.gensimAPI import GensimAPI
 
 
 class ModelError(Exception):
@@ -37,9 +37,9 @@ class Model(object):
     def classify(self, text):
         """Classifies text with gensim and then persists it. """  
         try:
-            gensim = GensimAPI(algo=self.algo)  
+            gensim = GensimAPI(algo=self.algo, trained=True)
         except Exception as e:
-            return False, e.get_message()
+            return False, e
         else:
             categories = gensim.classify_text(text, self.DIMENSION)
             return self._persist(text, categories)
@@ -164,7 +164,8 @@ class Model(object):
         except Exception as e:
             print(e)
             return False 
-    
+
+
 if __name__ == "__main__":
     m = Model()
     text = '''The Pope is the Bishop of Rome and the leader of the worldwide Catholic Church.[3]

@@ -1,2 +1,3 @@
 # diplomka
-Diplomová práca
+Diploma Thesis
+
