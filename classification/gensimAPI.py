@@ -6,6 +6,7 @@ import os
 import gensim
 import logging
 from gensim.corpora import wikicorpus
+from classification.classifications import Algos
 
 
 class GensimAPIError(Exception):
@@ -31,34 +32,44 @@ class GensimAPI(object):
     TF_IDF = "tfidf.mm.bz2"
     WORD_IDS = "wordids.txt.bz2"
     ALGOS = {
-        "lda": {
+        Algos.LDA: {
+            "name": "lda",
             "model": gensim.models.LdaModel,
             "dir": "lda_100",
             "topics": 100
         },
-        "lsi": {
+        Algos.LSI: {
+            "name": "lsi",
             "model": gensim.models.LsiModel,
             "dir": "lsi_100",
             "topics": 100
         }
     }
 
-    def __init__(self, trained=False, algo="lda", topics=100):
+    def __init__(self, trained=False, algo=Algos.LDA, topics=100):
         """Loads training data depending on classification algorithm.Raises exception if algo is not supported.  """
-        if algo.lower() not in self.ALGOS.keys():
+        if algo not in self.ALGOS.keys():
             raise NotSupportedError("Training algorithm used for classification is not supported by this application.")
+        self.algo = algo
         self.model, self.dictionary = self._get_trained_algo(algo) if trained else self._train_algo(algo, topics)
         if self.model is None or self.dictionary is None:
             raise NotTrainedError("Training of algorithm was not successful, cannot be used for classification.")
         
-    def classify_text(self, text, dimension=10):
-        """Classifies text, adjusts result vector to given dimension or smaller.  
-        Vector of possible themes is a list of tuples (theme id, suitability).  
+    def classify_text(self, text, dimension=None, minimum_probability=None):
+        """Classifies text, adjusts result vector to:
+        a) ignore topics which categorize given text with probability belog minimum_probability
+        b) take only 'dimension' topics from ordered array.
+        Vector of possible themes is a list of tuples (theme id, suitability).
         Returns vector sorted by suitability descending.  
         """
-        classified = self.model[self._get_query(text)]
-        themes = list(sorted(classified, key=lambda x: x[1], reverse=True))
-        return themes[:dimension]
+        classified = self.model.get_document_topics(self._get_query(text), minimum_probability=minimum_probability)
+        topics = list(sorted(classified, key=lambda x: x[1], reverse=True))
+        topics = topics[:dimension] if dimension else topics
+        return list(map(lambda t: (t[0], t[1].item()), topics))
+
+    def get_all_topics(self, words=10):
+        """Returns list of topics tuples.  """
+        return self.model.show_topics(self.ALGOS[self.algo]["topics"], num_words=words, log=False, formatted=False)
     
     def _train_algo(self, algo, topics):
         """Trains Gensim library with selected algorithm, uses English Wikipedia dump.  """
@@ -83,7 +94,7 @@ class GensimAPI(object):
     def _get_trained_algo(self, algo):
         """Loads trained data as object of given algorithm.  """
         try:
-            path = os.path.join(self.PATH, self.ALGOS[algo]["dir"], "trained.{}".format(str(algo).lower()))
+            path = os.path.join(self.PATH, self.ALGOS[algo]["dir"], "trained.{}".format(self.ALGOS[algo]["name"]))
             model = gensim.models.LdaModel.load(path)
             dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH,
                                                                                self.ALGOS[algo]["dir"],
@@ -102,11 +113,6 @@ class GensimAPI(object):
         """Print suitable themes for debugging purpose. Delete before production.  """
         for theme in themes:
             print(str(theme[0]) + ": " + self.model.print_topic(theme[0]))
-            
-    def _get_all_themes(self, count=100):
-        """Themes for debugging purpose. Delete before production.  """
-        themes = self.model.print_topics(count)
-        return themes
 
 
 if __name__ == "__main__":
@@ -117,4 +123,4 @@ if __name__ == "__main__":
         naming him as the "rock" upon which the church would be built. 
         The current pope is Francis, who was elected on 13 March 2013, succeeding Benedict XVI.
         '''))
-    print(gens._get_all_themes())
+    print(gens.get_all_topics())
