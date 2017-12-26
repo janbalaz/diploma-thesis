@@ -1,6 +1,11 @@
 .idea
 classification/resources/*
 backend/resources/*
+frontend/node_modules/
+frontend/dist/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
