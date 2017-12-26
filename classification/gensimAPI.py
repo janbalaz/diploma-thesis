@@ -69,7 +69,18 @@ class GensimAPI(object):
 
     def get_all_topics(self, words=10):
         """Returns list of topics tuples.  """
-        return self.model.show_topics(self.ALGOS[self.algo]["topics"], num_words=words, log=False, formatted=False)
+        result = []
+        topics = self.model.show_topics(self.ALGOS[self.algo]["topics"], num_words=words, log=False, formatted=False)
+        for t in topics:
+            entry = {
+                "id": t[0],
+                "words": sorted([
+                    {"word": w[0], "value": w[1].item()} for w in t[1]
+                ], key=lambda x: x["value"], reverse=True)
+            }
+            result.append(entry)
+
+        return result
     
     def _train_algo(self, algo, topics):
         """Trains Gensim library with selected algorithm, uses English Wikipedia dump.  """

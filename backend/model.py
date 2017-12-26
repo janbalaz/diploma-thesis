@@ -42,7 +42,10 @@ class Model(object):
         """Classifies text with gensim and then persists it. """  
         try:
             categories = self.gensim.classify_text(text, self.DIMENSION, self.MIN_PROBABILITY)
-            return True, self._persist_classification(text, categories)
+            if categories:
+                return True, self._persist_classification(text, categories)
+            else:
+                raise ModelError("No topic was found for given text. Please try longer or more meaningful text.")
         except Exception as e:
             return False, e
         
@@ -99,7 +102,7 @@ class Model(object):
             raise NotPersistedError("Error with database insertion through pymongo.")  
         else:
             if insert:
-                return insert
+                return insert.inserted_id
             else:
                 raise NotPersistedError("Classification was not inserted in database.")
 

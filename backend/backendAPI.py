@@ -6,9 +6,18 @@ import os
 from backend.model import Model
 from backend.jsonencoder import JSONEncoder
 from flask import Flask, request, abort
+from classification.classifications import Algos
 
 app = Flask(__name__)
-MODEL = Model()
+MODEL_LDA = Model(Algos.LDA)
+MODEL_LSI = None    # Model(Algos.LSI)
+
+
+def get_model(model):
+    if model.lower() == "lda":
+        return MODEL_LDA
+    else:
+        return MODEL_LSI
 
 
 @app.after_request
@@ -28,14 +37,19 @@ def add_cors(resp):
 
 @app.route("/")
 def main():
-    return JSONEncoder().encode({})
+    return app.send_static_file('frontend/dist/index.html')
 
 
 @app.route("/categories/", methods=["GET"])
 def categories():
     if request.method == "GET":
-        categories = MODEL.get_all_categories()
-        return JSONEncoder().encode(categories)
+        model = request.args.get("model")
+        if model:
+            num_words = int(request.args.get("num_words")) if request.args.get("num_words") else 10
+            categories = get_model(model).get_all_categories(num_words)
+            return JSONEncoder().encode(categories)
+        else:
+            abort(400)
     else:
         abort(404)
 
@@ -43,14 +57,23 @@ def categories():
 @app.route("/classify/", methods=["POST"])
 def classification_post():
     if request.method == "POST":
-        text = request.data["text"]
-        if text:
-            success, message = MODEL.classify(text)
+        text = request.get_json()["text"]
+        model = request.args.get("model")
+        if text and model:
+            success, message = get_model(model).classify(text)
             if success:
-                result = {"status": True, "result": message}
+                payload = {
+                    "id": message
+                }
             else:
-                result = {"status": False, "error": message} 
-            return JSONEncoder().encode(result)       
+                payload = {
+                    "error": str(message)
+                }
+
+            return JSONEncoder().encode({
+                "status": success,
+                "payload": payload
+            })
         else:
             abort(400)
     else:
@@ -60,25 +83,44 @@ def classification_post():
 @app.route("/classification/", methods=["GET"])
 def classification_get():
     if request.method == "GET":
-        post_id = request.args.get("post_id")
-        if post_id:
-            text = MODEL.get_classified_text(post_id)
-            if text:
-                result = {"status": True, "result": text}
+        model = request.args.get("model")
+        if model:
+            post_id = request.args.get("id")
+            if post_id:
+                entry = get_model(model).get_classified_text(post_id)
+                if entry:
+                    result = {"status": True, "payload": {
+                        "entries": [entry]
+                    }}
+                else:
+                    result = {"status": False, "payload": {
+                        "error": "No results found."
+                    }}
             else:
-                result = {"status": False, "error": text}
+                entries = get_model(model).get_all_classified()
+                if entries:
+                    result = {"status": True, "payload": {
+                        "entries": [entries]
+                    }}
+                else:
+                    result = {"status": False, "payload": {
+                        "error": "No results found."
+                    }}
+
+            return JSONEncoder().encode(result)
         else:
-            classification = MODEL.get_all_classified()
-            result = {"status": True, "result": classification}
+            abort(400)
     else:
         abort(404)
-    return JSONEncoder().encode(result)
-
 
 @app.teardown_appcontext
 def close_database(exception):
-    MODEL.close_connection()
-    
+    try:
+        MODEL_LDA.close_connection()
+        MODEL_LSI.close_connection()
+    except Exception:
+        pass
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=int(os.environ.get("PORT", 5000)))
