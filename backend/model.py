@@ -4,7 +4,9 @@ Defines also own exception.
 """
 
 import pymongo
-from bson import ObjectId
+import datetime
+import json
+from bson import ObjectId, json_util
 from classification.gensimAPI import GensimAPI
 from classification.classifications import Algos
 
@@ -59,9 +61,9 @@ class Model(object):
             return None
     
     def get_all_classified(self):
-        """Return all texts classified by given algo.  """
+        """Return all texts classified by given algo, newest first.  """
         collection = self.DB[self.TABLES[self.algo]]
-        result = collection.find()
+        result = collection.find().sort([("_id", -1)])
         if result.count():
             return list(result)
         else:
@@ -96,13 +98,14 @@ class Model(object):
         try:
             insert = self.DB[self.TABLES[self.algo]].insert_one({
                 "categories": categories,
-                "text": text
+                "text": text,
+                "timestamp": json.dumps(datetime.datetime.utcnow(), default=json_util.default)
             })
         except pymongo.errors.PyMongoError:
             raise NotPersistedError("Error with database insertion through pymongo.")  
         else:
             if insert:
-                return insert.inserted_id
+                return str(insert.inserted_id)
             else:
                 raise NotPersistedError("Classification was not inserted in database.")
 

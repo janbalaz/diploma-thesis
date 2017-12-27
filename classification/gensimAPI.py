@@ -85,8 +85,10 @@ class GensimAPI(object):
     def _train_algo(self, algo, topics):
         """Trains Gensim library with selected algorithm, uses English Wikipedia dump.  """
         try:
-            dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH, self.WORD_IDS))
-            mm = gensim.corpora.MmCorpus(os.path.join(self.PATH, self.TF_IDF))
+            dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH,
+                                                                               self.ALGOS[algo]["dir"],
+                                                                               self.WORD_IDS))
+            mm = gensim.corpora.MmCorpus(os.path.join(self.PATH, self.ALGOS[algo]["dir"], self.TF_IDF))
             model = self._get_model(self.ALGOS[algo]["model"], mm, dictionary, topics)
             self._persist(model, algo)
         except Exception:
@@ -100,13 +102,13 @@ class GensimAPI(object):
         
     def _get_model(self, func, mm, id2word, topics):
         """Returns model for given classification algorithm by func parameter.  """
-        return func(corpus=mm, id2word=id2word, num_topics=topics, distributed=True)
+        return func(corpus=mm, id2word=id2word, num_topics=topics)
     
     def _get_trained_algo(self, algo):
         """Loads trained data as object of given algorithm.  """
         try:
             path = os.path.join(self.PATH, self.ALGOS[algo]["dir"], "trained.{}".format(self.ALGOS[algo]["name"]))
-            model = gensim.models.LdaModel.load(path)
+            model = self.ALGOS[algo]["model"].load(path)
             dictionary = gensim.corpora.Dictionary.load_from_text(os.path.join(self.PATH,
                                                                                self.ALGOS[algo]["dir"],
                                                                                self.WORD_IDS))
@@ -127,11 +129,14 @@ class GensimAPI(object):
 
 
 if __name__ == "__main__":
-    gens = GensimAPI(trained=True)
+    gens = GensimAPI(algo=Algos.LSI, trained=True)
+    """
     print(gens.classify_text('''The Pope is the Bishop of Rome and the leader of the worldwide Catholic Church.[3] 
         The importance of the Roman bishop is largely derived from his role as the traditional successor to Saint Peter, 
         to whom Jesus gave the keys of Heaven and the powers of "binding and loosing", 
         naming him as the "rock" upon which the church would be built. 
         The current pope is Francis, who was elected on 13 March 2013, succeeding Benedict XVI.
         '''))
+    """
     print(gens.get_all_topics())
+

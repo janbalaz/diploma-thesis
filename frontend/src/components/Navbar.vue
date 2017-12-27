@@ -6,6 +6,7 @@
       <b-navbar-nav>
         <li class="nav-item"><router-link to="/" class="nav-link">Home</router-link></li>
         <li class="nav-item"><router-link to="/topics" class="nav-link">Topics</router-link></li>
+        <li class="nav-item"><router-link to="/classification" class="nav-link">Classification</router-link></li>
       </b-navbar-nav>
 
       <!-- Right aligned nav items -->

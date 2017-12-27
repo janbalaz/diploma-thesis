@@ -4,7 +4,8 @@
 
 import os
 from backend.model import Model
-from backend.jsonencoder import JSONEncoder
+import json
+from bson import json_util
 from flask import Flask, request, abort
 from classification.classifications import Algos
 
@@ -47,7 +48,7 @@ def categories():
         if model:
             num_words = int(request.args.get("num_words")) if request.args.get("num_words") else 10
             categories = get_model(model).get_all_categories(num_words)
-            return JSONEncoder().encode(categories)
+            return json.dumps(categories, default=json_util.default)
         else:
             abort(400)
     else:
@@ -70,10 +71,10 @@ def classification_post():
                     "error": str(message)
                 }
 
-            return JSONEncoder().encode({
+            return json.dumps({
                 "status": success,
                 "payload": payload
-            })
+            }, default=json_util.default)
         else:
             abort(400)
     else:
@@ -100,18 +101,19 @@ def classification_get():
                 entries = get_model(model).get_all_classified()
                 if entries:
                     result = {"status": True, "payload": {
-                        "entries": [entries]
+                        "entries": entries
                     }}
                 else:
                     result = {"status": False, "payload": {
                         "error": "No results found."
                     }}
 
-            return JSONEncoder().encode(result)
+            return json.dumps(result, default=json_util.default)
         else:
             abort(400)
     else:
         abort(404)
+
 
 @app.teardown_appcontext
 def close_database(exception):

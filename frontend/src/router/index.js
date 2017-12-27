@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import Home from '@/components/Home'
 import Topics from '@/components/Topics'
+import Classification from '@/components/Classification'
 
 Vue.use(Router)
 
@@ -28,6 +29,11 @@ export default new Router({
       path: '/topics',
       name: 'Topics',
       component: Topics
+    },
+    {
+      path: '/classification',
+      name: 'Classification',
+      component: Classification
     }
   ]
 })

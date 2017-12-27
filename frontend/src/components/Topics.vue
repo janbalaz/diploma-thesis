@@ -38,7 +38,7 @@
   const api = require('../../config/api').default
 
   export default {
-    name: 'Home',
+    name: 'Topics',
     components: {
       vueSlider
     },
