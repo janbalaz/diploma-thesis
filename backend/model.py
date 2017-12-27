@@ -4,7 +4,7 @@ Defines also own exception.
 """
 
 import pymongo
-# from bson import ObjectId
+from bson import ObjectId
 from classification.gensimAPI import GensimAPI
 from classification.classifications import Algos
 
@@ -52,7 +52,7 @@ class Model(object):
     def get_classified_text(self, classif_id):
         """Returns single classified text based on unique key. For example 5543b3976312fc15cc3bd1ee.  """
         collection = self.DB[self.TABLES[self.algo]]
-        result = collection.find({"_id": classif_id})
+        result = collection.find({"_id": ObjectId(classif_id)})
         if result.count():
             return result[0]
         else:

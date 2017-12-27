@@ -1,5 +1,5 @@
 <template>
-  <b-navbar toggleable="md" type="light" variant="info" class="nav">
+  <b-navbar toggleable="md" type="dark" variant="info" class="nav">
     <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
     <b-navbar-brand><router-link to="/" class="nav-link">NAMEOFAPP</router-link></b-navbar-brand>
     <b-collapse is-nav id="nav_collapse">
@@ -35,5 +35,11 @@
 <style scoped>
   .nav {
     margin-bottom: 20px;
+  }
+  .bg-info {
+    background-color: #343a40 !important;
+  }
+  .navbar-brand > a {
+    color: #FFF;
   }
 </style>

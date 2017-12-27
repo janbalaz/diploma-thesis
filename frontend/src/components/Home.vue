@@ -1,12 +1,12 @@
 <template>
     <b-container>
-      <b-form @reset="onReset" @submit="onSubmit">
+      <b-form @reset="onReset" @submit.prevent="onSubmit">
         <b-row>
           <b-form-textarea id="classification-text"
                          v-model="text"
                          placeholder="Enter text to be classified"
-                         :rows="18"
-                         :max-rows="24">
+                         :rows="rows"
+                         :max-rows="maxRows">
           </b-form-textarea>
         </b-row>
         <b-row id="button-row">
@@ -24,6 +24,17 @@
           {{ success }}
         </b-alert>
       </b-row>
+      <h2 v-show="classified.length">Last classification</h2>
+      <b-row v-for="(entry, index) in classified" :key="index">
+        <b-col cols="10" class="text-left">{{ entry.text }}</b-col>
+        <b-col cols="2">
+          <b-row v-for="(topic, index) in entry.categories" :key="index" class="text-right">
+            <router-link :to="`/topics#topic-${topic[0]}`">
+              Topic {{ topic[0] }} = {{ topic[1] * 100 | toPrecision(topicPrecision) }}%
+            </router-link>
+          </b-row>
+        </b-col>
+      </b-row>
     </b-container>
 </template>
 
@@ -34,9 +45,13 @@
     name: 'Home',
     data () {
       return {
+        rows: 18,
+        maxRows: 24,
+        topicPrecision: 4,
         text: '',
         error: '',
-        success: ''
+        success: '',
+        classified: []
       }
     },
     methods: {
@@ -60,18 +75,21 @@
             this.text = ''
             this.error = ''
             this.success = 'Your text was successfully classified.'
-            console.log(response.data.payload.id)
+            this.getClassified(response.data.payload.id)
           } else {
             this.error = response.data.payload.error
           }
         }).catch((error) => {
-          // TODO: display user-friendly error somehwere
           if (process.env.NODE_ENV !== 'production') console.log(error)
           this.error = 'Text classification failed, please try again.'
         })
       },
-      getClassified () {
-        // nada
+      getClassified (id) {
+        api.get('/classification/?model=lda&id=' + id).then((response) => {
+          this.classified = response.data.payload.entries
+        }).catch((error) => {
+          if (process.env.NODE_ENV !== 'production') console.log(error)
+        })
       }
     }
   }
