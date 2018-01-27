@@ -11,7 +11,7 @@ from classification.classifications import Algos
 
 app = Flask(__name__)
 MODEL_LDA = Model(Algos.LDA)
-MODEL_LSI = None    # Model(Algos.LSI)
+MODEL_LSI = Model(Algos.LSI)
 
 
 def get_model(model):

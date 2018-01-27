@@ -50,7 +50,7 @@
     },
     methods: {
       getAllClassified () {
-        api.get(`/classification/?model=lda`).then((response) => {
+        api.get(`/classification/?model=lsi`).then((response) => {
           if (response.data.status === true) {
             this.classified = response.data.payload.entries
             this.error = ''

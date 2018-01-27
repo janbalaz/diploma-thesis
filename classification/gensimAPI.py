@@ -62,10 +62,13 @@ class GensimAPI(object):
         Vector of possible themes is a list of tuples (theme id, suitability).
         Returns vector sorted by suitability descending.  
         """
-        classified = self.model.get_document_topics(self._get_query(text), minimum_probability=minimum_probability)
+        try:
+            classified = self.model.get_document_topics(self._get_query(text), minimum_probability=minimum_probability)
+        except Exception:
+            classified = self.model[self._get_query(text)]
         topics = list(sorted(classified, key=lambda x: x[1], reverse=True))
         topics = topics[:dimension] if dimension else topics
-        return list(map(lambda t: (t[0], t[1].item()), topics))
+        return list(map(lambda t: (t[0].item(), t[1].item()), topics))
 
     def get_all_topics(self, words=10):
         """Returns list of topics tuples.  """

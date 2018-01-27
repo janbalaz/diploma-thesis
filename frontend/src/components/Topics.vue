@@ -88,7 +88,7 @@
     },
     methods: {
       getTopics (numWords) {
-        api.get(`/categories/?num_words=${numWords}&model=lda`).then((response) => {
+        api.get(`/categories/?num_words=${numWords}&model=lsi`).then((response) => {
           this.topics = response.data
           this.error = ''
         }).catch((error) => {

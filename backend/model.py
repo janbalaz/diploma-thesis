@@ -101,8 +101,8 @@ class Model(object):
                 "text": text,
                 "timestamp": json.dumps(datetime.datetime.utcnow(), default=json_util.default)
             })
-        except pymongo.errors.PyMongoError:
-            raise NotPersistedError("Error with database insertion through pymongo.")  
+        except Exception:
+            raise NotPersistedError("Error with database insertion through pymongo.")
         else:
             if insert:
                 return str(insert.inserted_id)

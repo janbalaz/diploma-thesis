@@ -66,7 +66,7 @@
 
         api({
           method: 'post',
-          url: '/classify/?model=lda',
+          url: '/classify/?model=lsi',
           data: {
             text: this.text
           }
@@ -85,7 +85,7 @@
         })
       },
       getClassified (id) {
-        api.get('/classification/?model=lda&id=' + id).then((response) => {
+        api.get('/classification/?model=lsi&id=' + id).then((response) => {
           this.classified = response.data.payload.entries
         }).catch((error) => {
           if (process.env.NODE_ENV !== 'production') console.log(error)

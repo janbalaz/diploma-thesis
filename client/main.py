@@ -10,7 +10,7 @@ MIN_LENGTH = 1000
 FILENAME = "sports.xml"
 CSV_FILENAME = "result.csv"
 HEADERS = {'Content-type': 'application/json'}
-MODEL = 'lda'
+MODEL = 'lsi'
 
 
 def parse_xml():
@@ -23,10 +23,10 @@ def parse_xml():
         text = child.attrib['Body']
         if len(text) > MIN_LENGTH:
             data.append(text)
-            counter += 1
+            # counter += 1
 
-        if counter > 10:
-            break
+        # if counter > 10:
+        #    break
 
     return data
 
