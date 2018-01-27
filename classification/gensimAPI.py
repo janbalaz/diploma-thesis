@@ -120,7 +120,7 @@ class GensimAPI(object):
     
     def _get_query(self, text):
         """Preprocess and tokenize text, return it as BOW (bag of words).  """
-        return self.dictionary.doc2bow(wikicorpus.tokenize(text))
+        return self.dictionary.doc2bow(wikicorpus.tokenize(wikicorpus.filter_wiki(text)))
     
     def _print_themes(self, themes):
         """Print suitable themes for debugging purpose. Delete before production.  """

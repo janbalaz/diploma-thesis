@@ -1,6 +1,7 @@
 .idea
 classification/resources/*
 backend/resources/*
+client/resources/*
 frontend/node_modules/
 frontend/dist/
 frontend/npm-debug.log*
