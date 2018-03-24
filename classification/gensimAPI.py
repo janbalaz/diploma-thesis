@@ -68,7 +68,7 @@ class GensimAPI(object):
             classified = self.model[self._get_query(text)]
         topics = list(sorted(classified, key=lambda x: x[1], reverse=True))
         topics = topics[:dimension] if dimension else topics
-        return list(map(lambda t: (t[0].item(), t[1].item()), topics))
+        return list(map(lambda t: (t[0] if (self.algo == Algos.LDA) else t[0].item(), t[1].item()), topics))
 
     def get_all_topics(self, words=10):
         """Returns list of topics tuples.  """
