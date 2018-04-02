@@ -7,7 +7,7 @@ import mediawiki
 
 HEADERS = {'Content-type': 'application/json'}
 MIN_LEN = 1000
-MODEL = 'lda'
+MODEL = 'lsi'
 
 
 def get_wiki_articles(count=0, target=0, load_from_file=False):
@@ -43,7 +43,7 @@ def get_wiki_articles(count=0, target=0, load_from_file=False):
 
 
 def get_categorization(wiki_articles=None, load_from_file=False):
-    categorization_filename = 'pages-categorization'
+    categorization_filename = 'pages-categorization-{}'.format(MODEL)
 
     if load_from_file:
         return read_json(categorization_filename)
@@ -64,35 +64,30 @@ def get_categorization(wiki_articles=None, load_from_file=False):
 
 
 def get_som_data(categorization):
+    SPLIT_INDEX = 100
     som_data = []
     for i, record in enumerate(categorization):
         som_data.append(list(map(lambda x: x[1], record[str(i)]['result'])))
 
     mapsize = [20, 20]
-    som = sompy.SOMFactory.build(np.array(som_data), mapsize, mask=None, mapshape='planar', lattice='rect',
+    # Train SOM
+    train_som(som_data, SPLIT_INDEX, mapsize)
+    # Train SOM as before with one more testing datapoint
+    train_som(som_data, SPLIT_INDEX + 1, mapsize)
+
+
+def train_som(data, index, mapsize, clusters=100, jobs=4):
+    som = sompy.SOMFactory.build(np.array(data[:index]), mapsize, mask=None, mapshape='planar', lattice='rect',
                                  normalization='var', initialization='pca', neighborhood='gaussian', training='batch',
                                  name='sompy')
-    som.train(n_job=1, verbose='debug')
-    som.cluster(n_clusters=100)
-    #print("old labels (if any): ", som.cluster_labels)
-    #labels = som.build_data_labels()
-    #som.cluster_labels = labels
-    #print("new labels: ", som.cluster_labels)
-    som.data_labels = np.array([str(i*1000) for i in range(len(categorization))])
+    som.train(n_job=jobs, verbose='info')
+    som.cluster(n_clusters=clusters)
+    som.data_labels = np.array([str(i) for i in range(index)])
 
-    # h = sompy.hitmap.HitMapView(10, 10, 'hitmap')
-    #h.show(som)
-    umat = sompy.umatrix.UMatrixView(40, 40, "rand data")
-    umat.show(som, labels=True)
-    #v = sompy.mapview.View2D(50, 50, 'test', text_size=8)
-    ##cl = som.cluster(n_clusters=100)
-    #v.show(som, what='cluster', col_sz=6)
-    # v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6)
-
-    # v = sompy.mapview.View2DPacked(2, 2, 'test', text_size=8)
-    # first you can do clustering. Currently only K-means on top of the trained som
-    # cl = som.cluster(n_clusters=100)
-    #v.show(som, what='cluster')
+    h = sompy.hitmap.HitMapView(mapsize[0], mapsize[1], 'hitmap')
+    h.show(som, labels=True)
+    # umat = sompy.umatrix.UMatrixView(40, 40, "rand data")
+    # umat.show(som, labels=True)
 
 
 def zero_fill(topics):
@@ -139,11 +134,10 @@ def get_categorized(connection, post_id):
 
 def main():
     # wiki_articles = get_wiki_articles(count=500000, target=1100)
-    wiki_articles = get_wiki_articles(load_from_file=True)
+    # wiki_articles = get_wiki_articles(load_from_file=True)
     # categorized = get_categorization(wiki_articles)
     categorized = get_categorization(load_from_file=True)
     get_som_data(categorized)
-    # print(len(categorized))
 
 
 if __name__ == "__main__":
